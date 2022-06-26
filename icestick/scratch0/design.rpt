@@ -1,0 +1,37 @@
+
+icetime topological timing analysis report
+==========================================
+
+Info: max_span_hack is enabled: estimate is conservative.
+
+Report for critical path:
+-------------------------
+
+        lc40_6_10_7 (LogicCell40) [clk] -> lcout: 0.640 ns
+     0.640 ns net_11381 (cnt1[7])
+        odrv_6_10_11381_7415 (Odrv12) I -> O: 0.540 ns
+        t64 (LocalMux) I -> O: 0.330 ns
+        inmux_7_10_15642_15699 (InMux) I -> O: 0.260 ns
+        lc40_7_10_5 (LogicCell40) in3 -> lcout: 0.316 ns
+     2.085 ns net_13488 (cnt2_SB_DFFESR_Q_E_SB_LUT4_O_I0[0])
+        odrv_7_10_13488_15746 (Odrv4) I -> O: 0.372 ns
+        t103 (LocalMux) I -> O: 0.330 ns
+        inmux_7_11_15762_15801 (InMux) I -> O: 0.260 ns
+        lc40_7_11_2 (LogicCell40) in0 -> lcout: 0.449 ns
+     3.495 ns net_13608 (cnt2_SB_DFFESR_Q_E)
+        odrv_7_11_13608_15603 (Odrv12) I -> O: 0.540 ns
+        t110 (LocalMux) I -> O: 0.330 ns
+        t109 (IoInMux) I -> O: 0.260 ns
+        t108 (ICE_GB) USERSIGNALTOGLOBALBUFFER -> GLOBALBUFFEROUTPUT: 0.617 ns
+        t107 (gio2CtrlBuf) I -> O: 0.000 ns
+        t106 (GlobalMux) I -> O: 0.154 ns
+     5.395 ns seg_6_2_glb_netwk_1_2
+
+Resolvable net names on path:
+     0.640 ns ..  1.769 ns cnt1[7]
+     2.085 ns ..  3.046 ns cnt2_SB_DFFESR_Q_E_SB_LUT4_O_I0[0]
+     3.495 ns ..  3.495 ns cnt2_SB_DFFESR_Q_E
+
+Total number of logic levels: 3
+Total path delay: 5.40 ns (185.35 MHz)
+

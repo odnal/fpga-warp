@@ -1,0 +1,2 @@
+read_verilog simple.v
+synth_xilinx -edif simple.edif -top top
