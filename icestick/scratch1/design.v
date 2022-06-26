@@ -5,7 +5,7 @@ module tff(input d, rst, clk, output LED5);
   wire clk_out;
 
   clk_div u1 (clk, clk_out);
-  defparam u1.DIVISOR = 25'd2;
+  defparam u1.DIVISOR = 25'd2000000; // change to low value for sim
 
   // toggle flip-flop
   always @(posedge clk_out or posedge rst) begin
