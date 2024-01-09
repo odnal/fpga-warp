@@ -1,0 +1,40 @@
+language specifics...quick tips...general knowledge
+
+-	all port declarations are implicitly decalred as wire (this is convienet) 
+	however port direction is needed (i.e input/output)
+
+-	output ports that need to store values should be declared as reg data type
+	and can be used in procedural block like always and initial
+
+-	input and inout cannot be declared as reg (because they are being driven continuously)
+
+
+- 	port connection by the dot '.' is a convienent way to link ports to the respected module
+  	ports
+
+  		module example (input a, output b);
+
+  		module example_tb;
+  			reg aa;
+  			wire bb;
+  			example UUT (.a(aa), .b(bb))
+
+-	`default_nettype none - declare this and the compiler will throw an error for an undeclared net
+
+-	AVOID:
+		i once tried to simulate a simple design (toggling a led with a clock divider driving it)
+		this worked just fine on the fpga itself. essentially i used a reg variable to drive the 
+		final output of the led. however, the reg variable which looked somthing like this "reg o_output;" 
+    was not initialized and so i received undefined behavior (xx) on my outputs in the simulation. 
+    this was so difficult to understand... the answer was simple "reg o_output = 0" this was 
+    the fix... :( reg was initialized to X at time 0
+
+		lesson learned: always initialize registers for simulation purporses. you usually have a reset
+		signal that does this for you like
+
+		always @(posedge clk or reset)
+			if (reset)
+				o_output <= 0;
+
+		but i did not have a reset. only a clk. so for good practice, go ahead and initialize them when they are
+		declared or BE AWARE

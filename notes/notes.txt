@@ -1,0 +1,270 @@
+general notes of compilation and viewing of a verilog testbench:
+
+take and.v and and_tb.v
+
+and.v:
+
+module and_gate(input a, b, output out);
+   assign out = a & b;
+endmodule
+
+and_tb.v:
+
+`include "and.v"
+module and_tb();
+
+   reg a, b;
+   wire out;
+
+   and_gate UUT (a, b, out);
+   initial begin
+     a = 0; b = 0; #5; 
+     $display("%b", out);
+     a = 0; b = 1; #5; 
+     $display("%b", out);
+     a = 1; b = 0; #5; 
+     $display("%b", out);
+     a = 1; b = 1; #5; 
+     $display("%b", out);
+     $finish;
+   end
+endmodule
+
+we have our synthesizeable module from and.v and we want to simulate it
+
+we create a testbench called and_tb.v to do so
+important list of things to include in the testbench for compilation
+purposes:
+   1. `include "file.v"
+   2. module_name UUT (...)
+      note: module name is the name of the synthesizable module from
+      the source .v file and the (...) are the exact variable names
+      used in the module
+   3. initial begin .. end
+      note: everything between here is not synthesizeable meaning the 
+      fpga will not understand how to make sense of this logic, but our
+      testbenches can use them. for example, #5 is non-synthesizeable
+      to our fpga synthesis tool but to our testbench it means wait 5 seconds
+
+notice the $display("%b", out);
+here we are saying display what our variable out would be
+after assigning a and b values and waiting 5s (#5)
+
+this is useful in viewing a the output in a quick sim compilation
+
+using: iverilog -o sim and_tb.v
+we can view the simulation
+cara@batman:~/fun/fpga/basys3/and$ ./sim 
+0
+0
+0
+1
+
+lets make it a little more pretty
+
+`include "and.v"
+
+module and_tb();
+  
+  reg a, b;
+  wire out;
+  
+  and_gate UUT (a, b, out);
+  initial begin
+    $display("a b out");
+    a = 0; b = 0; #5; 
+    $display("%b %b %b",a, b, out);
+    a = 0; b = 1; #5; 
+    $display("%b %b %b",a, b, out);
+    a = 1; b = 0; #5; 
+    $display("%b %b %b",a, b, out);
+    a = 1; b = 1; #5; 
+    $display("%b %b %b",a, b, out);
+    $finish;
+  end
+endmodule
+
+cara@batman:~/fun/fpga/basys3/and$ ./sim 
+a b out
+0 0 0
+0 1 0
+1 0 0
+1 1 1
+
+very cool!
+
+now lets view our simulation a second way using gtkwave. for that we
+need a .vcd file, but lets do so while still keeping our text output!
+
+btw vcd stands for value change dump which stores all the information about
+value changes
+
+$dumpvars is a system command to dump all varaibles used in the tb
+
+it can also be used in ways such as $dumpvars(<level>, <module_or_vars>)
+which will dump variables in the module level specified (0 being the default
+top module) and all variables that are instantiated in other modules below it
+
+this can be useful if you have a big simulation and want to focus clearly
+on certain modules
+
+the most simplest way to use it is $dumpvars; which dumps top level 0 and all modules and variables that are instantiated from the top module
+
+this will automatically create a file called dump.vcd, we can creat our own
+file name from $dumpvars by using $dumpfile("file.vcd") before calling $dumpvars
+
+
+`include "and.v"
+
+module and_tb();
+  
+  reg a, b;
+  wire out;
+  
+  and_gate UUT (a, b, out);
+  initial begin
+    $dumpvars;
+    $display("a b out");
+    a = 0; b = 0; #5; 
+    $display("%b %b %b",a, b, out);
+    a = 0; b = 1; #5; 
+    $display("%b %b %b",a, b, out);
+    a = 1; b = 0; #5; 
+    $display("%b %b %b",a, b, out);
+    a = 1; b = 1; #5; 
+    $display("%b %b %b",a, b, out);
+    $finish;
+  end
+endmodule
+
+note: $finish; finishes the simulation and exits the process
+
+cara@batman:~/fun/fpga/basys3/and$ ./sim 
+VCD info: dumpfile dump.vcd opened for output.
+a b out
+0 0 0
+0 1 0
+1 0 0
+1 1 1
+
+cara@batman:~/fun/fpga/basys3/and$ ls
+and_tb.v  and.v  dump.vcd  sim
+
+to view the waveform file run: gtkwave dump.vcd
+
+nice so we have covered viewing a testbench in two forms
+
+commands:
+   iverilog -o sim and_tb.v
+
+note: if you did not include the source .v file you can include that file in
+      the compilation command so, "iverilog -o sim and_tb.v and.v" would also 
+      work
+
+
+general notes for RTL synthesis but no creating bit streams using yosys
+
+note that RTL is a process that if which is an abstraction to the
+specifications of the desgin of a desired circuit. this design is
+usually represneted in terms of logic gates (and gates, nor gates, etc)
+
+since fpgas do not have and gates but rather reconfigurable logic
+cells called LUTS (look up table), these will be used as the design
+specification to interpret/simulate an and gate (or whatever logic
+you implement)
+
+yosys can perform RTL synthesis that shows us how the logic we implement
+is described on LUTS
+
+the process in doing so in a simple manners is as follows:
+
+yosys
+read_verilog and_gate.v
+hierarchy -check 
+proc
+opt
+show
+
+this will generate our viewable LUT
+note that and_gate.v is synthesizable code
+
+# read_verilog: reads the design
+# hierarchy -check -top <top module name>: checks the hierarchy of the design
+# proc: replaces the processes in the design with mux's, flip-flops, and latches
+# opt: optimizes and clean ups
+# show: displays our LUT
+
+pretty cool! but note we didn't actually synthesize our verilog to a target
+platform, this is a more general representation. each fpga platform has different
+ways of configuring LUTs which may take in different amounts of inputs, etc.
+
+for demonstration I will use the basys3 board which has a Xilinx chip but I could
+also use my icestick which is ice40 based
+
+we can say:
+
+synth_xilinx
+show
+
+then we can see how our LUT is actually configured
+
+=== and_gate ===
+
+   Number of wires:                  5
+   Number of wire bits:              6
+   Number of public wires:           3
+   Number of public wire bits:       3
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:                  4
+     IBUF                            2
+     LUT2                            1
+     OBUF                            1
+
+   Estimated number of LCs:          1
+
+this is output from the synthesis and we can see that we have 4 cells in use
+3 of which seem to be just used as a buffer
+
+
+from the viewer you can see the LUT number that is used for LUT2, we can dump
+that by first changing directories to the top module
+
+yosys> cd and_gate
+
+yosys [and_gate]> 
+
+yosys [and_gate]> dump $2110
+
+
+  attribute \module_not_derived 1
+  attribute \src "/usr/local/bin/../share/yosys/xilinx/lut_map.v:43.26-44.30"
+  cell \LUT2 $abc$2109$auto$blifparse.cc:515:parse_blif$2110
+    parameter \INIT 4'1000
+    connect \I0 $techmap2114$abc$2109$auto$blifparse.cc:515:parse_blif$2110.A [0]
+    connect \I1 $techmap2114$abc$2109$auto$blifparse.cc:515:parse_blif$2110.A [1]
+    connect \O $abc$2109$iopadmap$out
+  end
+
+
+the LUT is initialized with "INIT 4'1000" this value. what does this mean?
+well, if we describe an and gate
+
+a b out
+0 0 0
+0 1 0
+1 0 0
+1 1 1
+
+the out is 4'1000 or 0x08
+
+so this is how the LUT is configured with our logic, awesome!
+
+
+
+
+TODO: learn process of place-n-route for ice40 boards and generating bit stream
+have to use vivado for that process to generate the bit stream and then you can
+run the run.sh script. just remember to copy the .bit file to your original
+project location after you generated it
